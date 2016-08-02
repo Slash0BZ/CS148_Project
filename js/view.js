@@ -36,6 +36,64 @@ var shader2 = new GL.Shader('\
   }\
 ');
 
+var shader_phong = new GL.Shader('\
+  varying vec3 normal;\
+  varying vec3 FragPos;\
+  void main() {\
+    normal = gl_NormalMatrix * gl_Normal;\
+    vec4 FragPosPre = gl_ModelViewMatrix * gl_Vertex;\
+    FragPos = (gl_ModelViewMatrix * gl_Vertex).xyz;\
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+  }\
+  ','\
+  varying vec3 normal;\
+  varying vec3 FragPos;\
+  uniform vec3 lightPos;\
+  uniform vec3 viewPos;\
+  const vec3 lightColor = vec3(1.0, 1.0, 1.0);\
+  const vec3 objectColor = vec3(1.0, 0.0, 0.0);\
+  void main() {\
+    vec3 lightVec = normalize(lightPos - FragPos);\
+    vec3 viewVec = normalize(viewPos - FragPos);\
+    vec3 reflectVec = reflect(-lightVec, normalize(normal));\
+    float spec = pow(max(dot(viewVec, reflectVec), 0.0), 32.0);\
+    vec3 specVec = 0.5 * spec * lightColor;\
+    float diff = max(dot(normalize(normal), lightVec), 0.0);\
+    vec3 diffVec = diff * lightColor;\
+    vec3 ambVec = 0.1 * lightColor;\
+    gl_FragColor = vec4(((diffVec + specVec + ambVec) * objectColor), 1);\
+}\
+  ');
+var shader_phong_rail = new GL.Shader('\
+  varying vec3 normal;\
+  varying vec3 FragPos;\
+  void main() {\
+    normal = gl_NormalMatrix * gl_Normal;\
+    vec4 FragPosPre = gl_ModelViewMatrix * gl_Vertex;\
+    FragPos = (gl_ModelViewMatrix * gl_Vertex).xyz;\
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+  }\
+  ','\
+  varying vec3 normal;\
+  varying vec3 FragPos;\
+  uniform vec3 lightPos;\
+  uniform vec3 viewPos;\
+  uniform float brightness;\
+  const vec3 lightColor = vec3(1.0, 1.0, 1.0);\
+  void main() {\
+    vec3 objectColor = brightness * (normal * 0.5 + 0.5);\
+    vec3 lightVec = normalize(lightPos - FragPos);\
+    vec3 viewVec = normalize(viewPos - FragPos);\
+    vec3 reflectVec = reflect(-lightVec, normalize(normal));\
+    float spec = pow(max(dot(viewVec, reflectVec), 0.0), 32.0);\
+    vec3 specVec = 0.5 * spec * lightColor;\
+    float diff = max(dot(normalize(normal), lightVec), 0.0);\
+    vec3 diffVec = diff * lightColor;\
+    vec3 ambVec = 0.1 * lightColor;\
+    gl_FragColor = vec4(((diffVec + specVec + ambVec) * objectColor), 1);\
+}\
+  ');
+
 //draw rails
 function fxyz(t){
   var ret = [];
@@ -52,6 +110,9 @@ function fnormal(t){
   return ret;
 }
 var railMesh;
+var lowerRailMesh;
+var light = new GL.Vector(10, 20, 6);
+var view = new GL.Vector(0, 0, 0);
 function loadRailMesh(){
   //gl.pushMatrix();
   var t = 0;
@@ -60,13 +121,16 @@ function loadRailMesh(){
   var triangles = [];
   var trianglesCount = 0;
 
+  var lower_vertices = [];
+  var lower_vertices_count = 0;
+  var lower_triangles = [];
+  var lower_triangles_count = 0;
   while (t < Math.PI){
     var current = fxyz(t);
-    console.log(current[0] + " " + current[1]);
     var c_normal = fnormal(t);
-    //var unit = (sphere_radius) / Math.sqrt(c_normal[0] * c_normal[0] +
-      //                                         c_normal[1] * c_normal[1] + 
-       //                                        c_normal[2] * c_normal[2]);
+    var unit = (sphere_radius / 2) / Math.sqrt(c_normal[0] * c_normal[0] +
+                                           c_normal[1] * c_normal[1] + 
+                                           c_normal[2] * c_normal[2]);
     var x = current[0];
     var y = current[1];
     var z = current[2];
@@ -95,7 +159,7 @@ function loadRailMesh(){
    vertices: vertices,
    triangles: triangles
   };
-  var nmesh = GL.Mesh.load(data);
+  var nmesh = GL.Mesh.load(data).computeNormals();
   railMesh = nmesh;
   return nmesh;
 
@@ -106,7 +170,9 @@ function drawRail(){
   //gl.loadIdentity();
   gl.translate(0, 4, 0);
   //gl.translate(-5, -12, 0);
-  shader2.uniforms({brightness: 1}).draw(railMesh, gl.TRIANGLES);
+  var ccLight = gl.modelviewMatrix.transformPoint(light);
+  var ccView = gl.modelviewMatrix.transformPoint(camera);
+  shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(railMesh, gl.TRIANGLES);
   gl.popMatrix();
 }
 
@@ -139,18 +205,21 @@ gl.onupdate = function(seconds) {
 
 // scene renderer
 gl.ondraw = function() {
+
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.loadIdentity();
   // camera
   gl.rotate(-angleX, 1, 0, 0);
   gl.rotate(-angleY, 0, 1, 0);
   gl.translate(-camera.x, -camera.y, -camera.z);
+  var cLight = gl.modelviewMatrix.transformPoint(light);
+  var cView = gl.modelviewMatrix.transformPoint(camera);
   // ball
   gl.pushMatrix();
   gl.translate(ballPos.x, ballPos.y, ballPos.z);
   gl.rotate(rotate, rotateAxis.x, rotateAxis.y, rotateAxis.z);
-  shader.uniforms({ brightness: 1 }).draw(mesh, gl.TRIANGLES);
-  shader.uniforms({ brightness: 0 }).draw(mesh, gl.LINES);
+  shader_phong.uniforms({ brightness: 1 , viewPos: cView, lightPos: cLight}).draw(mesh, gl.TRIANGLES);
+  shader.uniforms({ brightness: 0}).draw(mesh, gl.LINES);
   gl.popMatrix();
   // plane
   drawRail();
