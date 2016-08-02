@@ -1,4 +1,4 @@
-var ballPos = new GL.Vector(-5, 5, 0);
+var ballPos = new GL.Vector(-4, 4, 0);
 var theta = 0;
 var omega = 0;
 var alpha = 10;
@@ -6,7 +6,8 @@ var rotate = 0;
 var rotateAxis = new GL.Vector(0, 0, 1);
 
 function toCoord(theta) {
-  return new GL.Vector(-5 * Math.cos(theta * Math.PI / 180), 5 - 5 * Math.sin(theta * Math.PI / 180), 0);
+  var vec = new GL.Vector(-4 * Math.cos(theta * Math.PI / 180), 4 - 4 * Math.sin(theta * Math.PI / 180), 0);
+  return vec;
 }
 
 function moveAndUpdate(seconds) {
@@ -24,5 +25,5 @@ function moveAndUpdate(seconds) {
   omega = omega + seconds * alpha;
   alpha = 10 * Math.cos(theta * Math.PI / 180);
   ballPos = toCoord(theta);
-  rotate = -2.5 * theta;
+  rotate = -2 * theta;
 }
