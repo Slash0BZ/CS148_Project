@@ -111,8 +111,13 @@ function fnormal(t){
 }
 var railMesh;
 var lowerRailMesh;
+var frontRailMesh;
+var backRailMesh;
+var capRailMesh;
+
 var light = new GL.Vector(10, 20, 6);
 var view = new GL.Vector(0, 0, 0);
+
 function loadRailMesh(){
   //gl.pushMatrix();
   var t = 0;
@@ -125,6 +130,21 @@ function loadRailMesh(){
   var lower_vertices_count = 0;
   var lower_triangles = [];
   var lower_triangles_count = 0;
+
+  var front_vertices = [];
+  var front_vertices_count = 0;
+  var front_triangles = [];
+  var front_triangles_count = 0;
+
+  var back_vertices = [];
+  var back_vertices_count = 0;
+  var back_triangles = [];
+  var back_triangles_count = 0;
+
+  var cap_vertices = [];
+  var cap_triangles = [];
+
+  var firstFlag = 1;
   while (t < Math.PI){
     var current = fxyz(t);
     var c_normal = fnormal(t);
@@ -134,33 +154,96 @@ function loadRailMesh(){
     var x = current[0];
     var y = current[1];
     var z = current[2];
-    /*var x = current[0] - unit * c_normal[0];
-    var y = current[1] - unit * c_normal[1];
-    var z = current[2] - unit * c_normal[2]; */
+    var lower_x = current[0] - unit * c_normal[0];
+    var lower_y = current[1] - unit * c_normal[1];
+    var lower_z = current[2] - unit * c_normal[2]; 
 
-    vertices[verticesCount] = [x, y, z - 1];
+    vertices[verticesCount] = [x, y, z - 1];   
     vertices[verticesCount + 1] = [x, y, z + 1];
     verticesCount = verticesCount + 2;
+
+    lower_vertices[lower_vertices_count] = [lower_x, lower_y, lower_z - 1];
+    lower_vertices[lower_vertices_count + 1] = [lower_x, lower_y, lower_z + 1];
+    lower_vertices_count = lower_vertices_count + 2;
+
+    front_vertices[front_vertices_count] = [x, y, z + 1];
+    front_vertices[front_vertices_count + 1] = [lower_x, lower_y, lower_z + 1];
+    front_vertices_count = front_vertices_count + 2;
+
+    back_vertices[back_vertices_count] = [x, y, z - 1];
+    back_vertices[back_vertices_count + 1] = [lower_x, lower_y, lower_z - 1];
+    back_vertices_count = back_vertices_count + 2;
+
+    if (firstFlag == 1){
+      cap_vertices[0] = [x, y, z - 1];
+      cap_vertices[1] = [x, y, z + 1];
+      cap_vertices[2] = [lower_x, lower_y, lower_z - 1];
+      cap_vertices[3] = [lower_x, lower_y, lower_z + 1];
+      firstFlag = 0;
+    }
+    cap_vertices[4] = [x, y, z - 1];
+    cap_vertices[5] = [x, y, z + 1];
+    cap_vertices[6] = [lower_x, lower_y, lower_z - 1];
+    cap_vertices[7] = [lower_x, lower_y, lower_z + 1];
+
     t = t + 0.05;
   }
   for(var i = 0; i < vertices.length - 2; i++){
     if (i % 2 == 0){
       triangles[trianglesCount] = [i, i+2, i+1];
       trianglesCount++;
+      lower_triangles[lower_triangles_count] = [i+1, i+2, i];
+      lower_triangles_count++;
+      front_triangles[front_triangles_count] = [i, i+2, i+1];
+      front_triangles_count++;
+      back_triangles[back_triangles_count] = [i + 1, i+2, i];
+      back_triangles_count++;
     }
     else{
       triangles[trianglesCount] = [i, i+1, i+2];
       trianglesCount++;
+      lower_triangles[lower_triangles_count] = [i+2, i+1, i];
+      lower_triangles_count++;
+      front_triangles[front_triangles_count] = [i, i+1, i+2];
+      front_triangles_count++
+      back_triangles[back_triangles_count] = [i + 2, i+1, i];
+      back_triangles_count++;
     }
   }
 
+  cap_triangles[0] = [0, 1, 3];
+  cap_triangles[1] = [2, 0, 3];
+  cap_triangles[2] = [5, 6, 7];
+  cap_triangles[3] = [6, 5, 4];
 
   var data = {
    vertices: vertices,
    triangles: triangles
   };
+  var lower_data = {
+    vertices: lower_vertices,
+    triangles: lower_triangles
+  }
+  var front_data = {
+    vertices: front_vertices,
+    triangles: front_triangles
+  }
+  var back_data = {
+    vertices: back_vertices,
+    triangles: back_triangles
+  }
+  var cap_data = {
+    vertices: cap_vertices,
+    triangles: cap_triangles
+  }
   var nmesh = GL.Mesh.load(data).computeNormals();
   railMesh = nmesh;
+  var lower_nmesh = GL.Mesh.load(lower_data).computeNormals();
+  lowerRailMesh = lower_nmesh;
+  frontRailMesh = GL.Mesh.load(front_data).computeNormals();
+  backRailMesh = GL.Mesh.load(back_data).computeNormals();
+  capRailMesh = GL.Mesh.load(cap_data).computeNormals();
+
   return nmesh;
 
 }
@@ -173,6 +256,10 @@ function drawRail(){
   var ccLight = gl.modelviewMatrix.transformPoint(light);
   var ccView = gl.modelviewMatrix.transformPoint(camera);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(railMesh, gl.TRIANGLES);
+  shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(lowerRailMesh, gl.TRIANGLES);
+  shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(frontRailMesh, gl.TRIANGLES);
+  shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(backRailMesh, gl.TRIANGLES);
+  shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(capRailMesh, gl.TRIANGLES);
   gl.popMatrix();
 }
 
