@@ -97,16 +97,16 @@ var shader_phong_rail = new GL.Shader('\
 //draw rails
 function fxyz(t){
   var ret = [];
-  ret[0] = 5 * Math.cos(t);
-  ret[1] = -5 * Math.sin(t);
-  ret[2] = 0;
+  ret[0] = getPosition(t).x;
+  ret[1] = getPosition(t).y;
+  ret[2] = getPosition(t).z;
   return ret;
 }
 function fnormal(t){
   var ret = [];
-  ret[0] = -5 * Math.cos(t);
-  ret[1] = 5 * Math.sin(t);
-  ret[2] = 0;
+  ret[0] = getProperties(t)["normal"].x;
+  ret[1] = getProperties(t)["normal"].y;
+  ret[2] = getProperties(t)["normal"].z;
   return ret;
 }
 var railMesh;
@@ -120,7 +120,7 @@ var view = new GL.Vector(0, 0, 0);
 
 function loadRailMesh(){
   //gl.pushMatrix();
-  var t = 0;
+  var t = 0.1;
   var vertices = [];
   var verticesCount = 0;
   var triangles = [];
@@ -145,7 +145,7 @@ function loadRailMesh(){
   var cap_triangles = [];
 
   var firstFlag = 1;
-  while (t < Math.PI){
+  while (t < 20){
     var current = fxyz(t);
     var c_normal = fnormal(t);
     var unit = (sphere_radius / 2) / Math.sqrt(c_normal[0] * c_normal[0] +
@@ -157,34 +157,36 @@ function loadRailMesh(){
     var lower_x = current[0] - unit * c_normal[0];
     var lower_y = current[1] - unit * c_normal[1];
     var lower_z = current[2] - unit * c_normal[2]; 
-
-    vertices[verticesCount] = [x, y, z - 1];   
-    vertices[verticesCount + 1] = [x, y, z + 1];
+    var vec1 = getProperties(t)["tangent"].cross(getProperties(t)["normal"]).unit();
+    //var vec1 = getProperties(t)["normal"].divide(5);
+    //console.log(vec1);
+    vertices[verticesCount] = [x + vec1.x, y + vec1.y, z + vec1.z];   
+    vertices[verticesCount + 1] = [x - vec1.x, y - vec1.y, z - vec1.z];
     verticesCount = verticesCount + 2;
 
-    lower_vertices[lower_vertices_count] = [lower_x, lower_y, lower_z - 1];
-    lower_vertices[lower_vertices_count + 1] = [lower_x, lower_y, lower_z + 1];
+    lower_vertices[lower_vertices_count] = [lower_x + vec1.x, lower_y + vec1.y, lower_z + vec1.z];
+    lower_vertices[lower_vertices_count + 1] = [lower_x - vec1.x, lower_y - vec1.y, lower_z - vec1.z];
     lower_vertices_count = lower_vertices_count + 2;
 
-    front_vertices[front_vertices_count] = [x, y, z + 1];
-    front_vertices[front_vertices_count + 1] = [lower_x, lower_y, lower_z + 1];
+    front_vertices[front_vertices_count] = [x + vec1.x, y + vec1.y, z + vec1.z];
+    front_vertices[front_vertices_count + 1] = [lower_x - vec1.x, lower_y - vec1.y, lower_z - vec1.z];
     front_vertices_count = front_vertices_count + 2;
 
-    back_vertices[back_vertices_count] = [x, y, z - 1];
-    back_vertices[back_vertices_count + 1] = [lower_x, lower_y, lower_z - 1];
+    back_vertices[back_vertices_count] = [x + vec1.x, y + vec1.y, z + vec1.z];
+    back_vertices[back_vertices_count + 1] = [lower_x - vec1.x, lower_y - vec1.y, lower_z - vec1.z];
     back_vertices_count = back_vertices_count + 2;
 
     if (firstFlag == 1){
-      cap_vertices[0] = [x, y, z - 1];
-      cap_vertices[1] = [x, y, z + 1];
-      cap_vertices[2] = [lower_x, lower_y, lower_z - 1];
-      cap_vertices[3] = [lower_x, lower_y, lower_z + 1];
+      cap_vertices[0] = [x + vec1.x, y + vec1.y, z + vec1.z];
+      cap_vertices[1] = [x - vec1.x, y - vec1.y, z - vec1.z];
+      cap_vertices[2] = [lower_x + vec1.x, lower_y + vec1.y, lower_z + vec1.z];
+      cap_vertices[3] = [lower_x - vec1.x, lower_y - vec1.y, lower_z - vec1.z];
       firstFlag = 0;
     }
-    cap_vertices[4] = [x, y, z - 1];
-    cap_vertices[5] = [x, y, z + 1];
-    cap_vertices[6] = [lower_x, lower_y, lower_z - 1];
-    cap_vertices[7] = [lower_x, lower_y, lower_z + 1];
+    cap_vertices[4] = [x + vec1.x, y + vec1.y, z + vec1.z];
+    cap_vertices[5] = [x - vec1.x, y - vec1.y, z - vec1.z];
+    cap_vertices[6] = [lower_x + vec1.x, lower_y + vec1.y, lower_z + vec1.z];
+    cap_vertices[7] = [lower_x - vec1.x, lower_y - vec1.y, lower_z - vec1.z];
 
     t = t + 0.05;
   }
@@ -251,11 +253,12 @@ loadRailMesh();
 function drawRail(){
   gl.pushMatrix();
   //gl.loadIdentity();
-  gl.translate(0, 4, 0);
+  //gl.translate(0, 4, 0);
   //gl.translate(-5, -12, 0);
   var ccLight = gl.modelviewMatrix.transformPoint(light);
   var ccView = gl.modelviewMatrix.transformPoint(camera);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(railMesh, gl.TRIANGLES);
+  //shader2.uniforms({brightness:1}).draw(railMesh, gl.LINES);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(lowerRailMesh, gl.TRIANGLES);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(frontRailMesh, gl.TRIANGLES);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(backRailMesh, gl.TRIANGLES);
@@ -263,18 +266,11 @@ function drawRail(){
   gl.popMatrix();
 }
 
-// mouse events
-gl.onmousemove = function(e) {
-  if (e.dragging) {
-    angleY -= e.deltaX * 0.25;
-    angleX = Math.max(-90, Math.min(90, angleX - e.deltaY * 0.25));
-  }
-};
 
+var index = 0;
 // animation
 gl.onupdate = function(seconds) {
   moveAndUpdate(seconds);
-  
   var CameraSpeed = seconds * 4;
 
   // Forward movement
@@ -288,6 +284,14 @@ gl.onupdate = function(seconds) {
   var right = GL.keys.D | GL.keys.RIGHT;
   var sideways = GL.Vector.fromAngles(-angleY * Math.PI / 180, 0);
   camera = camera.add(sideways.multiply(CameraSpeed * (right - left)));
+};
+
+// mouse events
+gl.onmousemove = function(e) {
+  if (e.dragging) {
+    angleY -= e.deltaX * 0.25;
+    angleX = Math.max(-90, Math.min(90, angleX - e.deltaY * 0.25));
+  }
 };
 
 // scene renderer
