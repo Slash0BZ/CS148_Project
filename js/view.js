@@ -5,7 +5,24 @@ var angleY = -2;
 var camera = new GL.Vector(1.166,6.23,20);
 var sphere_radius = 1;
 var mesh = GL.Mesh.sphere({ normals: true, radius: sphere_radius, detail: 12 }).computeWireframe();
-var plane_mesh = GL.Mesh.plane({normals: true}).transform(GL.Matrix.scale(10, 10, 5));
+var plane_mesh = GL.Mesh.plane({normals: true, coords: true}).transform(GL.Matrix.scale(150, 150, 1));
+var server_prefix = "http://localhost/public/rollerball/";
+var fs_prefix = "texture/1/";
+var skybox_front;
+var skybox_back;
+var skybox_left;
+var skybox_right;
+var skybox_up;
+var skybox_down;
+
+function loadSkyBoxMesh(){
+  skybox_front = GL.Texture.fromURL(server_prefix + fs_prefix + "front.png");
+  skybox_back = GL.Texture.fromURL(server_prefix + fs_prefix + "back.png");
+  skybox_left = GL.Texture.fromURL(server_prefix + fs_prefix + "left.png");
+  skybox_right = GL.Texture.fromURL(server_prefix + fs_prefix + "right.png");
+  skybox_up = GL.Texture.fromURL(server_prefix + fs_prefix + "up.png");
+  skybox_down = GL.Texture.fromURL(server_prefix + fs_prefix + "down.png");
+}
 
 //shaders
 var shader = new GL.Shader('\
@@ -33,6 +50,20 @@ var shader2 = new GL.Shader('\
   varying vec3 normal;\
   void main() {\
     gl_FragColor = vec4(brightness * (normal * 0.5 + 0.5), 1.0);\
+  }\
+');
+
+var shader_skybox = new GL.Shader('\
+  varying vec2 coord;\
+  void main() {\
+    coord = gl_TexCoord.xy;\
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\
+  }\
+', '\
+  uniform sampler2D texture;\
+  varying vec2 coord;\
+  void main() {\
+    gl_FragColor = texture2D(texture, coord);\
   }\
 ');
 
@@ -121,6 +152,7 @@ var view = new GL.Vector(0, 0, 0);
 function loadRailMesh(){
   //gl.pushMatrix();
   var t = 0.1;
+
   var vertices = [];
   var verticesCount = 0;
   var triangles = [];
@@ -249,12 +281,10 @@ function loadRailMesh(){
   return nmesh;
 
 }
+
 loadRailMesh();
 function drawRail(){
   gl.pushMatrix();
-  //gl.loadIdentity();
-  //gl.translate(0, 4, 0);
-  //gl.translate(-5, -12, 0);
   var ccLight = gl.modelviewMatrix.transformPoint(light);
   var ccView = gl.modelviewMatrix.transformPoint(camera);
   shader_phong_rail.uniforms({brightness: 1, viewPos: ccView, lightPos: ccLight}).draw(railMesh, gl.TRIANGLES);
@@ -266,6 +296,55 @@ function drawRail(){
   gl.popMatrix();
 }
 
+loadSkyBoxMesh();
+function drawSkyBox(){
+  gl.pushMatrix();
+    skybox_down.bind(0);
+	gl.pushMatrix();
+	gl.translate(0, -150, 0);
+  	gl.rotate(-90, 1, 0, 0);
+    shader_skybox.uniforms({texture:0}).draw(plane_mesh);
+	gl.popMatrix();
+	gl.pushMatrix();
+	gl.translate(0, 0, -150);
+	skybox_front.bind(1);
+    shader_skybox.uniforms({texture:1}).draw(plane_mesh);
+	gl.popMatrix();
+	gl.pushMatrix();
+	gl.translate(-150, 0, 0);
+	gl.rotate(90, 0, 1, 0);
+	skybox_right.bind(2);
+    shader_skybox.uniforms({texture:2}).draw(plane_mesh);
+	gl.popMatrix();
+	gl.pushMatrix();
+	gl.translate(150, 0, 0);
+	gl.rotate(-90, 0, 1, 0);
+	skybox_left.bind(3);
+    shader_skybox.uniforms({texture:3}).draw(plane_mesh);
+	gl.popMatrix();
+	gl.pushMatrix();
+	gl.translate(0, 150, 0);
+	gl.rotate(90, 1, 0, 0);
+	skybox_up.bind(4);
+    shader_skybox.uniforms({texture:4}).draw(plane_mesh);
+	gl.popMatrix();
+	gl.pushMatrix();
+	gl.translate(0, 0, 150);
+	gl.rotate(180, 0, 1, 0);
+	skybox_back.bind(5);
+    shader_skybox.uniforms({texture:5}).draw(plane_mesh);
+	gl.popMatrix();
+
+  gl.popMatrix();
+}
+
+// mouse events
+gl.onmousemove = function(e) {
+  if (e.dragging) {
+    angleY -= e.deltaX * 0.25;
+    angleX = Math.max(-90, Math.min(90, angleX - e.deltaY * 0.25));
+  }
+};
 
 var index = 0;
 // animation
@@ -314,10 +393,7 @@ gl.ondraw = function() {
   gl.popMatrix();
   // plane
   drawRail();
-  gl.rotate(-90, 1, 0, 0);
-  gl.translate(0, 0, -10);
-  shader.uniforms({ brightness: 1 }).draw(plane_mesh, gl.TRIANGLES);
-  // rail
+  drawSkyBox();
 };
 
 
