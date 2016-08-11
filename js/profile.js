@@ -34,7 +34,10 @@ var two = 2;
 	new GL.Vector(5, 15, 13)];
 */
 var points = 
-	[new GL.Vector(10, 10, 5),
+	[new GL.Vector(16, 10.8, 5),
+	new GL.Vector(14, 10.6, 5),
+	new GL.Vector(12, 10.4, 5),
+	new GL.Vector(10, 10, 5),
 	new GL.Vector(10, 7, 5),
 	new GL.Vector(9, 5, 5),
 	new GL.Vector(8, 3, 5),
@@ -45,16 +48,40 @@ var points =
 	new GL.Vector(-1, -1, 5),
 	new GL.Vector(-3, 0, 5),
 	new GL.Vector(-5, 1, 5),
-	new GL.Vector(-6, 2, 5),
-	new GL.Vector(-7, 4, 5),
-	new GL.Vector(-8, 6, 5),
-	new GL.Vector(-8, 9, 5),
-	new GL.Vector(-7, 11, 5),
-	new GL.Vector(-6, 13, 5),
-	new GL.Vector(-5, 15, 5),
-	new GL.Vector(-3, 16, 5),
-	new GL.Vector(-1, 17, 5),
-	new GL.Vector(2, 18, 5)];
+	new GL.Vector(-6, 3, 5),
+	new GL.Vector(-7, 5, 5),
+	new GL.Vector(-8, 7.5, 5),
+	new GL.Vector(-9, 10.5, 5),
+	new GL.Vector(-10, 10.5, 5),
+	new GL.Vector(-10.5, 10.5, 5),
+	new GL.Vector(-11, 10.5, 5),
+	new GL.Vector(-12, 9, 5),
+	new GL.Vector(-14, 6, 5),
+	new GL.Vector(-16, 4, 5),
+	new GL.Vector(-17, 2, 5),
+	new GL.Vector(-18, 0, 5),
+	new GL.Vector(-19, 0, 5),
+	new GL.Vector(-20, 1, 5),
+	new GL.Vector(-21, 2, 5),
+	new GL.Vector(-22, 4, 5),
+	new GL.Vector(-23, 6, 5),
+	new GL.Vector(-24, 7, 5),
+	new GL.Vector(-25, 8, 5),
+	new GL.Vector(-26, 8, 5),
+	new GL.Vector(-27, 8, 5),
+	new GL.Vector(-28, 8, 5),
+	new GL.Vector(-28, 7, 5),
+	new GL.Vector(-29, 5, 5),
+	new GL.Vector(-30, 4, 5),
+	new GL.Vector(-31, 3, 5),
+	new GL.Vector(-32, 4, 5),
+	new GL.Vector(-33, 4, 5),
+	new GL.Vector(-35, 6, 5),
+	new GL.Vector(-36, 7, 5),
+	new GL.Vector(-36, 8, 5),
+	new GL.Vector(-35, 9, 5),
+	new GL.Vector(-34, 9, 5),
+	new GL.Vector(-33, 9, 5)];
 
 var normalsCache = new Array(points.length * 20);
 var tangentsCache = new Array(points.length * 20);
@@ -99,7 +126,7 @@ function getPosition(index) {
 var zeroNormal;
 var zeroR;
 if (tangents[0].angleTo(tangents[1]) < EPSILON) {
-	var outVec = new GL.Vector(0, 0, 1);
+	var outVec = new GL.Vector(0, 0, -1);
 	if (Math.abs(tangents[0].angleTo(outVec)) < EPSILON) zeroNormal = tangents[0].dot(new GL.Vector(1, 0, 0)).unit();
 	else zeroNormal = tangents[0].dot(outVec).unit();
 	zeroR = -1;
@@ -135,6 +162,7 @@ function getProps(index) {
 
 	var normal;
 	var R;
+	console.log(index);
 	if (ceil == 0) {
 		normal = zeroNormal;
 		R = zeroR;
@@ -168,7 +196,6 @@ for (var i = 0; i <= last * 20; i++) {
 	normalsCache[i] = props["normal"];
 	tangentsCache[i] = props["tangent"];
 	RCache[i] = props["radius"];
-	console.log(props);
 }
 
 function getProperties(index) {

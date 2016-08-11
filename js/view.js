@@ -1,9 +1,9 @@
 // variables
 var gl = GL.create();
-var angleX = -23.5;
-var angleY = -2;
-var camera = new GL.Vector(1.166,6.23,20);
-var sphere_radius = 1;
+var angleX = -4.25;
+var angleY = 45.5;
+var camera = new GL.Vector(26.215,7.135,30.696);
+var sphere_radius = 0.1;
 var mesh = GL.Mesh.sphere({ normals: true, radius: sphere_radius, detail: 12 }).computeWireframe();
 var plane_mesh = GL.Mesh.plane({normals: true, coords: true}).transform(GL.Matrix.scale(150, 150, 1));
 var server_prefix = "http://localhost/public/rollerball/";
@@ -177,7 +177,7 @@ function loadRailMesh(){
   var cap_triangles = [];
 
   var firstFlag = 1;
-  while (t < 20){
+  while (t < 47){
     var current = fxyz(t);
     var c_normal = fnormal(t);
     var unit = (sphere_radius / 2) / Math.sqrt(c_normal[0] * c_normal[0] +
@@ -186,9 +186,9 @@ function loadRailMesh(){
     var x = current[0];
     var y = current[1];
     var z = current[2];
-    var lower_x = current[0] - unit * c_normal[0];
-    var lower_y = current[1] - unit * c_normal[1];
-    var lower_z = current[2] - unit * c_normal[2]; 
+    var lower_x = current[0] + unit * c_normal[0];
+    var lower_y = current[1] + unit * c_normal[1];
+    var lower_z = current[2] + unit * c_normal[2]; 
     var vec1 = getProperties(t)["tangent"].cross(getProperties(t)["normal"]).unit();
     //var vec1 = getProperties(t)["normal"].divide(5);
     //console.log(vec1);
